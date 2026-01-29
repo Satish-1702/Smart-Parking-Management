@@ -1,0 +1,375 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Smart Parking Analytics</title>
+    <link rel="stylesheet" href="styles.css" />
+    <style>
+      .analytics-body {
+        min-height: 100vh;
+        background: radial-gradient(circle at top left, #e0f2fe, #f9fafb);
+        padding: 16px;
+        font-family: "Segoe UI", Arial, sans-serif;
+      }
+      .analytics-shell {
+        max-width: 960px;
+        margin: 0 auto;
+      }
+      .analytics-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+      }
+      .analytics-title {
+        margin: 0;
+      }
+      .analytics-subtitle {
+        margin: 2px 0 0;
+        font-size: 13px;
+        color: #64748b;
+      }
+      .charts-grid {
+        display: grid;
+        grid-template-columns: 2fr 1.4fr;
+        gap: 16px;
+      }
+      .chart-card {
+        background: white;
+        border-radius: 14px;
+        padding: 14px 16px 18px;
+        box-shadow: 0 16px 40px rgba(15, 23, 42, 0.18);
+        border: 1px solid #e2e8f0;
+      }
+      .layout-grid {
+        display: grid;
+        grid-template-columns: repeat(10, 1fr);
+        gap: 4px;
+        margin-top: 10px;
+      }
+      .layout-slot {
+        aspect-ratio: 1 / 1;
+        border-radius: 6px;
+        border: 1px solid #e5e7eb;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 10px;
+        color: #0f172a;
+      }
+      .layout-slot.vacant {
+        background: #dcfce7;
+      }
+      .layout-slot.occupied {
+        background: #fee2e2;
+      }
+      .layout-slot.blocked {
+        background: #e5e7eb;
+        color: #6b7280;
+      }
+      .chart-title {
+        margin: 0 0 4px;
+        font-size: 15px;
+      }
+      .chart-subtitle {
+        margin: 0 0 12px;
+        font-size: 12px;
+        color: #64748b;
+      }
+      .bar-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 6px;
+      }
+      .bar-label {
+        width: 80px;
+        font-size: 12px;
+        color: #475569;
+      }
+      .bar-track {
+        flex: 1;
+        height: 12px;
+        border-radius: 999px;
+        background: #e5e7eb;
+        overflow: hidden;
+      }
+      .bar-fill {
+        height: 100%;
+        border-radius: 999px;
+        transition: width 0.4s ease;
+      }
+      .bar-fill.vacant {
+        background: #22c55e;
+      }
+      .bar-fill.occupied {
+        background: #f97316;
+      }
+      .bar-fill.blocked {
+        background: #64748b;
+      }
+      .bar-value {
+        width: 36px;
+        font-size: 12px;
+        text-align: right;
+        color: #0f172a;
+      }
+      .pie-legend {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-top: 8px;
+      }
+      .pie-legend-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        color: #475569;
+      }
+      .pie-swatch {
+        width: 10px;
+        height: 10px;
+        border-radius: 999px;
+      }
+      .pie-swatch.vacant {
+        background: #22c55e;
+      }
+      .pie-swatch.occupied {
+        background: #f97316;
+      }
+      .pie-swatch.blocked {
+        background: #64748b;
+      }
+      .pie-circle {
+        width: 140px;
+        height: 140px;
+        border-radius: 50%;
+        background: conic-gradient(
+          #22c55e 0deg,
+          #22c55e 120deg,
+          #f97316 120deg,
+          #f97316 260deg,
+          #64748b 260deg,
+          #64748b 360deg
+        );
+        margin: 0 auto;
+        position: relative;
+      }
+      .pie-inner {
+        position: absolute;
+        inset: 22px;
+        border-radius: 50%;
+        background: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        font-size: 13px;
+        color: #0f172a;
+      }
+      .pill {
+        padding: 2px 8px;
+        border-radius: 999px;
+        background: #e0f2fe;
+        color: #1d4ed8;
+        font-size: 11px;
+      }
+      @media (max-width: 800px) {
+        .charts-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body class="analytics-body">
+    <div class="analytics-shell">
+      <div class="analytics-header">
+        <div>
+          <h1 class="analytics-title">Parking analytics</h1>
+          <p class="analytics-subtitle" id="analytics-subtitle">
+            Live occupancy and availability overview.
+          </p>
+        </div>
+        <a href="dashboard.html" class="link-button">Back to dashboard</a>
+      </div>
+
+      <div class="charts-grid">
+        <section class="chart-card">
+          <h2 class="chart-title">Occupancy by status</h2>
+          <p class="chart-subtitle">
+            How many slots are vacant, occupied, and unavailable right now.
+          </p>
+          <div id="bars"></div>
+        </section>
+
+        <section class="chart-card">
+          <h2 class="chart-title">Occupancy distribution</h2>
+          <p class="chart-subtitle">
+            Proportion of each status in the current lot.
+          </p>
+          <div style="display: flex; gap: 12px; align-items: center">
+            <div class="pie-circle">
+              <div class="pie-inner">
+                <div id="pie-total" style="font-weight: 600">0 slots</div>
+                <div id="pie-feature" style="font-size: 11px; color: #64748b">
+                  -
+                </div>
+              </div>
+            </div>
+            <div class="pie-legend">
+              <div class="pie-legend-item">
+                <span class="pie-swatch vacant"></span>
+                <span>Vacant</span>
+              </div>
+              <div class="pie-legend-item">
+                <span class="pie-swatch occupied"></span>
+                <span>Occupied</span>
+              </div>
+              <div class="pie-legend-item">
+                <span class="pie-swatch blocked"></span>
+                <span>Unavailable</span>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div style="margin-top: 16px">
+        <section class="chart-card">
+          <h2 class="chart-title">Parking layout preview</h2>
+          <p class="chart-subtitle">
+            A compact layout showing vacant, occupied, and unavailable slots.
+          </p>
+          <div id="layout-grid" class="layout-grid"></div>
+        </section>
+      </div>
+    </div>
+
+    <script>
+      function getParams() {
+        const search = new URLSearchParams(window.location.search);
+        const toInt = (key) => parseInt(search.get(key) || "0", 10) || 0;
+        return {
+          feature: search.get("feature") || "total",
+          scenario: search.get("scenario") || "",
+          total: toInt("total"),
+          vacant: toInt("vacant"),
+          occupied: toInt("occupied"),
+          blocked: toInt("blocked"),
+        };
+      }
+
+      function render() {
+        const { feature, scenario, total, vacant, occupied, blocked } = getParams();
+        const barsEl = document.getElementById("bars");
+        const subtitleEl = document.getElementById("analytics-subtitle");
+        const pieTotalEl = document.getElementById("pie-total");
+        const pieFeatureEl = document.getElementById("pie-feature");
+        const layoutGridEl = document.getElementById("layout-grid");
+
+        const safeTotal = total || vacant + occupied + blocked || 1;
+
+        if (subtitleEl) {
+          const labelMap = {
+            total: "Overall occupancy for the selected parking lot.",
+            vacant: "Focus on available slots you can allocate.",
+            occupied: "Focus on currently used parking capacity.",
+            blocked: "Focus on unavailable or reserved slots.",
+          };
+          const scenarioLabel =
+            scenario === "rush"
+              ? "Scenario: Rush hour demand pattern applied."
+              : scenario === "festival"
+              ? "Scenario: Festival event traffic applied."
+              : scenario === "emergency"
+              ? "Scenario: Emergency response mode applied."
+              : "";
+          subtitleEl.textContent =
+            (scenarioLabel ? scenarioLabel + " " : "") +
+            (labelMap[feature] || "Live occupancy and availability overview.");
+        }
+
+        if (pieTotalEl) {
+          pieTotalEl.textContent = `${safeTotal} slots`;
+        }
+        if (pieFeatureEl) {
+          const featureLabel = {
+            total: "All slots",
+            vacant: "Vacant-focused view",
+            occupied: "Occupied-focused view",
+            blocked: "Unavailable-focused view",
+          }[feature];
+          pieFeatureEl.textContent = featureLabel || "";
+        }
+
+        const rows = [
+          { key: "vacant", label: "Vacant", value: vacant },
+          { key: "occupied", label: "Occupied", value: occupied },
+          { key: "blocked", label: "Unavailable", value: blocked },
+        ];
+
+        if (barsEl) {
+          barsEl.innerHTML = "";
+          rows.forEach((row) => {
+            const rowEl = document.createElement("div");
+            rowEl.className = "bar-row";
+
+            const labelEl = document.createElement("div");
+            labelEl.className = "bar-label";
+            labelEl.textContent = row.label;
+
+            const trackEl = document.createElement("div");
+            trackEl.className = "bar-track";
+
+            const fillEl = document.createElement("div");
+            fillEl.className = `bar-fill ${row.key}`;
+            const pct = Math.round((row.value / safeTotal) * 100);
+            fillEl.style.width = `${pct}%`;
+
+            const valueEl = document.createElement("div");
+            valueEl.className = "bar-value";
+            valueEl.textContent = row.value;
+
+            trackEl.appendChild(fillEl);
+            rowEl.appendChild(labelEl);
+            rowEl.appendChild(trackEl);
+            rowEl.appendChild(valueEl);
+            barsEl.appendChild(rowEl);
+          });
+        }
+
+        if (layoutGridEl) {
+          layoutGridEl.innerHTML = "";
+          const totalSlots = Math.max(safeTotal, 20);
+          let remainingVacant = vacant;
+          let remainingOccupied = occupied;
+          let remainingBlocked = blocked;
+
+          for (let i = 0; i < totalSlots; i++) {
+            const cell = document.createElement("div");
+            cell.className = "layout-slot";
+            let cls = "blocked";
+            if (remainingVacant > 0) {
+              cls = "vacant";
+              remainingVacant--;
+            } else if (remainingOccupied > 0) {
+              cls = "occupied";
+              remainingOccupied--;
+            } else if (remainingBlocked > 0) {
+              cls = "blocked";
+              remainingBlocked--;
+            }
+            cell.classList.add(cls);
+            cell.textContent = i + 1;
+            layoutGridEl.appendChild(cell);
+          }
+        }
+      }
+
+      render();
+    </script>
+  </body>
+</html>
+

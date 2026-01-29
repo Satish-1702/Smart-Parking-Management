@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Smart Parking Digital Twin - Dashboard</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header>
+      <div class="header-main">
+        <h1>Smart Parking Digital Twin</h1>
+        <nav class="nav-links">
+          <a href="login.html">Login</a>
+          <a href="signup.html">Sign up</a>
+        </nav>
+      </div>
+      <div class="actions">
+        <button id="refresh-btn">Refresh</button>
+        <button data-scenario="rush">Run Rush Hour</button>
+        <button data-scenario="festival">Run Festival</button>
+        <button data-scenario="emergency">Run Emergency</button>
+        <button id="analytics-btn">Analytics</button>
+      </div>
+    </header>
+    <main class="dashboard-main">
+      <section class="dashboard-summary">
+        <div class="summary-card accent feature-card" data-feature="total">
+          <p class="summary-label">Total slots</p>
+          <p class="summary-value" id="total-count">-</p>
+          <p class="summary-extra">Live view of the parking lot.</p>
+        </div>
+        <div class="summary-card feature-card" data-feature="vacant">
+          <p class="summary-label">Vacant</p>
+          <p class="summary-value vacant" id="vacant-count">-</p>
+          <p class="summary-chip">Available now</p>
+        </div>
+        <div class="summary-card feature-card" data-feature="occupied">
+          <p class="summary-label">Occupied</p>
+          <p class="summary-value occupied" id="occupied-count">-</p>
+          <p class="summary-chip">Currently in use</p>
+        </div>
+        <div class="summary-card feature-card" data-feature="blocked">
+          <p class="summary-label">Unavailable</p>
+          <p class="summary-value blocked" id="blocked-count">-</p>
+          <p class="summary-chip">Blocked / reserved</p>
+        </div>
+      </section>
+      <section class="panel">
+        <div class="panel-header">
+          <div>
+            <h3>Parking layout</h3>
+            <p class="panel-subtitle">Tap any slot to see details on the right.</p>
+          </div>
+          <div id="legend" class="legend">
+            <span class="legend-item vacant">Vacant</span>
+            <span class="legend-item occupied">Occupied</span>
+            <span class="legend-item blocked">Unavailable</span>
+          </div>
+        </div>
+        <div id="grid"></div>
+      </section>
+      <section class="panel info">
+        <div class="panel-header">
+          <div>
+            <h3>Slot details</h3>
+            <p class="panel-subtitle" id="slot-subtitle">
+              Select a slot on the left to see more information.
+            </p>
+          </div>
+        </div>
+        <pre id="slot-info">Waiting for data...</pre>
+        <div class="slot-controls">
+          <div class="slot-controls-row">
+            <label for="slot-status-select">Update status</label>
+            <select id="slot-status-select">
+              <option value="0">Vacant</option>
+              <option value="1">Occupied</option>
+              <option value="2">Unavailable</option>
+            </select>
+          </div>
+          <div class="slot-controls-row">
+            <label for="slot-price-input">Price (₹ / hour, optional)</label>
+            <input
+              id="slot-price-input"
+              type="number"
+              min="0"
+              step="1"
+              placeholder="Leave blank to keep current"
+            />
+          </div>
+          <button id="slot-save-btn" class="primary-button full-width">
+            Save slot changes
+          </button>
+          <p class="slot-controls-hint">
+            Tip: choose a slot on the left, adjust status or price, then save to
+            update the live grid.
+          </p>
+        </div>
+        <div class="divider"></div>
+        <div class="panel-header">
+          <div>
+            <h3>Smart insights</h3>
+            <p class="panel-subtitle">
+              Quick overview of utilisation and free capacity for this lot.
+            </p>
+          </div>
+        </div>
+        <pre id="price-info">Waiting for insights...</pre>
+      </section>
+    </main>
+    <script src="app.js"></script>
+  </body>
+  </html>
+

@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login - Smart Parking Digital Twin</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body class="auth-body">
+    <header class="auth-header">
+      <h1>Smart Parking Digital Twin</h1>
+      <a href="signup.html" class="link-button">Create account</a>
+    </header>
+    <main class="auth-container">
+      <section class="auth-card">
+        <h2>Welcome back</h2>
+        <p class="auth-subtitle">
+          Login to access your smart parking dashboard.
+        </p>
+        <form class="auth-form" id="login-form">
+          <div class="field">
+            <label for="login-email">Email address</label>
+            <input
+              type="email"
+              id="login-email"
+              name="email"
+              placeholder="you@example.com"
+              required
+            />
+          </div>
+          <div class="field">
+            <label for="login-password">Password</label>
+            <input
+              type="password"
+              id="login-password"
+              name="password"
+              placeholder="Enter your password"
+              required
+              minlength="6"
+            />
+          </div>
+          <div class="field field-inline">
+            <label class="remember-me">
+              <input type="checkbox" id="remember" />
+              <span>Remember me</span>
+            </label>
+            <a href="#" class="muted-link">Forgot password?</a>
+          </div>
+          <button type="submit" class="primary-button full-width">
+            Login
+          </button>
+          <p class="auth-footer-text">
+            New here?
+            <a href="signup.html">Create an account</a>
+          </p>
+        </form>
+      </section>
+    </main>
+    <script>
+      // Simple demo login: basic non-empty validation, then redirect to dashboard.
+      document
+        .getElementById("login-form")
+        .addEventListener("submit", function (e) {
+          e.preventDefault();
+          const email = document.getElementById("login-email").value.trim();
+          const password = document
+            .getElementById("login-password")
+            .value.trim();
+          if (!email || !password) {
+            alert("Please fill in both email and password.");
+            return;
+          }
+          // In a real app you would call the backend here.
+          alert("Login successful (demo only – dashboard will now open).");
+          window.location.href = "dashboard.html";
+        });
+    </script>
+  </body>
+</html>
+

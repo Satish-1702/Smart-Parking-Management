@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Rush Hour Overview - Smart Parking</title>
+    <link rel="stylesheet" href="styles.css" />
+    <style>
+      .scenario-accent {
+        color: #b91c1c;
+      }
+      .analytics-body {
+        min-height: 100vh;
+        background: radial-gradient(circle at top left, #fee2e2, #f9fafb);
+        padding: 16px;
+        font-family: "Segoe UI", Arial, sans-serif;
+      }
+    </style>
+  </head>
+  <body class="analytics-body">
+    <div class="analytics-shell">
+      <div class="analytics-header">
+        <div>
+          <h1 class="analytics-title scenario-accent">Rush hour scenario</h1>
+          <p class="analytics-subtitle" id="analytics-subtitle">
+            High-demand traffic pattern applied to the parking lot.
+          </p>
+        </div>
+        <a href="dashboard.html" class="link-button">Back to dashboard</a>
+      </div>
+
+      <div class="charts-grid">
+        <section class="chart-card">
+          <h2 class="chart-title">Occupancy by status</h2>
+          <p class="chart-subtitle">
+            Vacant, occupied and unavailable slots after running Rush Hour.
+          </p>
+          <div id="bars"></div>
+        </section>
+
+        <section class="chart-card">
+          <h2 class="chart-title">Occupancy distribution</h2>
+          <p class="chart-subtitle">
+            Proportion of each status under rush hour conditions.
+          </p>
+          <div style="display: flex, gap: 12px; align-items: center">
+            <div class="pie-circle">
+              <div class="pie-inner">
+                <div id="pie-total" style="font-weight: 600">0 slots</div>
+                <div id="pie-feature" style="font-size: 11px; color: #64748b">
+                  -
+                </div>
+              </div>
+            </div>
+            <div class="pie-legend">
+              <div class="pie-legend-item">
+                <span class="pie-swatch vacant"></span>
+                <span>Vacant</span>
+              </div>
+              <div class="pie-legend-item">
+                <span class="pie-swatch occupied"></span>
+                <span>Occupied</span>
+              </div>
+              <div class="pie-legend-item">
+                <span class="pie-swatch blocked"></span>
+                <span>Unavailable</span>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div style="margin-top: 16px">
+        <section class="chart-card">
+          <h2 class="chart-title">Parking layout preview</h2>
+          <p class="chart-subtitle">
+            Compact layout showing how rush hour affects slot availability.
+          </p>
+          <div id="layout-grid" class="layout-grid"></div>
+        </section>
+      </div>
+    </div>
+
+    <script src="scenario-view.js"></script>
+  </body>
+</html>
+

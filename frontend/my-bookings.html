@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>My Bookings - Smart Parking</title>
+    <link rel="stylesheet" href="styles.css" />
+    <style>
+      .bookings-body { min-height: 100vh; background: radial-gradient(circle at top right, #dbeafe, #f0fdf4); padding: 16px; }
+      .bookings-shell { max-width: 720px; margin: 0 auto; }
+      .bookings-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+      .bookings-title { margin: 0; }
+      .booking-card { background: white; border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; box-shadow: 0 8px 24px rgba(15,23,42,0.08); border: 1px solid #e2e8f0; }
+      .booking-card h4 { margin: 0 0 6px; }
+      .booking-meta { font-size: 12px; color: #64748b; }
+    </style>
+  </head>
+  <body class="bookings-body">
+    <div class="bookings-shell">
+      <div class="bookings-header">
+        <h1 class="bookings-title">My bookings</h1>
+        <div>
+          <a href="nearby.html" class="link-button">Find parking</a>
+          <a href="dashboard.html" class="link-button">Dashboard</a>
+        </div>
+      </div>
+      <div id="list"></div>
+    </div>
+    <script>
+      async function load() {
+        const list = document.getElementById("list");
+        list.innerHTML = "<p>Loading...</p>";
+        try {
+          const res = await fetch("http://localhost:8000/api/bookings");
+          const data = await res.json();
+          const bookings = data.bookings || [];
+
+          if (!bookings.length) {
+            list.innerHTML = "<p>No bookings yet. <a href='nearby.html'>Find parking</a></p>";
+            return;
+          }
+
+          list.innerHTML = bookings.map((b) => {
+            const place = b.place_id;
+            const addr = place?.place_name ? [place.place_name.address, place.place_name.city].filter(Boolean).join(", ") : "—";
+            const start = new Date(b.start_time).toLocaleString();
+            const end = new Date(b.end_time).toLocaleString();
+            return `
+              <div class="booking-card">
+                <h4>${addr}</h4>
+                <p class="booking-meta">Slot ${b.slot_id} · ₹${b.total_amount} · ${b.booking_status}</p>
+                <p class="booking-meta">${start} – ${end}</p>
+              </div>
+            `;
+          }).join("");
+        } catch (err) {
+          list.innerHTML = `<p style="color:#dc2626;">${err.message}</p>`;
+        }
+      }
+      load();
+    </script>
+  </body>
+</html>

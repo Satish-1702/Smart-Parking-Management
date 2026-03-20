@@ -80,17 +80,41 @@
       </section>
     </main>
     <script>
-      // Simple client-side validation demo (no real backend signup yet)
-      document.querySelector(".auth-form").addEventListener("submit", function (e) {
+      document.querySelector(".auth-form").addEventListener("submit", async function (e) {
         e.preventDefault();
+        const fullName = document.getElementById("name").value.trim();
+        const email = document.getElementById("email").value.trim();
+        const vehicle = document.getElementById("vehicle").value.trim();
         const password = document.getElementById("password").value;
         const confirm = document.getElementById("confirm-password").value;
+
+        if (!fullName || !email || !password || !confirm) {
+          alert("Please fill in all required fields.");
+          return;
+        }
+
         if (password !== confirm) {
           alert("Passwords do not match. Please try again.");
           return;
         }
-        alert("Signup successful (demo only – not yet connected to backend).");
-        window.location.href = "login.html";
+
+        try {
+          const resp = await fetch("http://localhost:8000/api/users/signup", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ full_name: fullName, email, password, phone: "", vehicle }),
+          });
+
+          if (resp.status === 201) {
+            alert("Signup successful. Please login.");
+            window.location.href = "login.html";
+          } else {
+            const error = await resp.json();
+            alert(error.error || "Signup failed");
+          }
+        } catch (err) {
+          alert("Signup failed: " + err.message);
+        }
       });
     </script>
   </body>

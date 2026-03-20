@@ -2,16 +2,29 @@ import cors from "cors";
 import express from "express";
 import http from "http";
 import { WebSocketServer } from "ws";
+import path from "path";
+import { fileURLToPath } from "url";
 
 import { connectDb } from "./db.js";
 import { SlotModel } from "./models/slot.js";
 import { computePrices } from "./pricing.js";
 import { runScenario } from "./scenarios.js";
 import { grid } from "./state.js";
+import placesRouter from "./routes/places.js";
+import bookingsRouter from "./routes/bookings.js";
+import usersRouter from "./routes/users.js";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const frontendPath = path.join(__dirname, "../../frontend");
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+app.use(express.static(frontendPath));
+app.use("/api", placesRouter);
+app.use("/api", bookingsRouter);
+app.use("/api", usersRouter);
 
 const ready = (async () => {
   await connectDb();

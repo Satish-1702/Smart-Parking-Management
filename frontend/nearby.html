@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Nearby Parking - Smart Parking</title>
+    <link rel="stylesheet" href="styles.css" />
+    <style>
+      .nearby-body {
+        min-height: 100vh;
+        background: radial-gradient(circle at top right, #dbeafe, #f0fdf4);
+        padding: 16px;
+      }
+      .nearby-shell {
+        max-width: 720px;
+        margin: 0 auto;
+      }
+      .nearby-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+      }
+      .nearby-title { margin: 0; }
+      .nearby-subtitle { margin: 4px 0 0; font-size: 13px; color: #64748b; }
+      .search-card {
+        background: white;
+        border-radius: 14px;
+        padding: 20px;
+        box-shadow: 0 16px 40px rgba(15, 23, 42, 0.12);
+        border: 1px solid #e2e8f0;
+        margin-bottom: 16px;
+      }
+      .search-row {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        align-items: flex-end;
+      }
+      .search-field {
+        flex: 1;
+        min-width: 120px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .search-field label { font-size: 12px; font-weight: 500; }
+      .search-field input {
+        padding: 8px 10px;
+        border-radius: 8px;
+        border: 1px solid #cbd5e1;
+      }
+      .place-card {
+        background: white;
+        border-radius: 12px;
+        padding: 14px 16px;
+        margin-bottom: 10px;
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+        border: 1px solid #e2e8f0;
+      }
+      .place-card h4 { margin: 0 0 6px; }
+      .place-address { font-size: 12px; color: #64748b; margin-bottom: 8px; }
+      .place-features {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-bottom: 6px;
+      }
+      .place-tag {
+        padding: 2px 8px;
+        border-radius: 999px;
+        font-size: 11px;
+        background: #e0f2fe;
+        color: #0369a1;
+      }
+      .place-price { font-size: 13px; font-weight: 500; }
+      .place-distance { font-size: 11px; color: #22c55e; }
+      .place-actions { margin-top: 10px; display: flex; gap: 8px; }
+      .place-actions a { font-size: 12px; }
+    </style>
+  </head>
+  <body class="nearby-body">
+    <div class="nearby-shell">
+      <div class="nearby-header">
+        <div>
+          <h1 class="nearby-title">Nearby parking</h1>
+          <p class="nearby-subtitle">Find parking places near your location.</p>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <a href="my-bookings.html" class="link-button">My bookings</a>
+          <a href="dashboard.html" class="link-button">Dashboard</a>
+        </div>
+      </div>
+
+      <div class="search-card">
+        <form id="nearby-form">
+          <div class="search-row">
+            <div class="search-field">
+              <label for="lat">Latitude</label>
+              <input id="lat" type="number" step="any" placeholder="e.g. 17.385" required />
+            </div>
+            <div class="search-field">
+              <label for="lng">Longitude</label>
+              <input id="lng" type="number" step="any" placeholder="e.g. 78.4867" required />
+            </div>
+            <div class="search-field">
+              <label for="radius">Radius (m)</label>
+              <input id="radius" type="number" value="5000" min="500" max="50000" step="500" />
+            </div>
+            <button type="submit" class="primary-button">Search</button>
+          </div>
+        </form>
+        <p style="margin: 10px 0 0; font-size: 12px; color: #64748b;">
+          <button type="button" id="use-location-btn" class="muted-link" style="background:none;border:none;cursor:pointer;padding:0;">
+            Use my location
+          </button>
+        </p>
+      </div>
+
+      <div id="results"></div>
+    </div>
+    <script>
+      const form = document.getElementById("nearby-form");
+      const resultsEl = document.getElementById("results");
+      const latEl = document.getElementById("lat");
+      const lngEl = document.getElementById("lng");
+      const radiusEl = document.getElementById("radius");
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const lat = latEl.value;
+        const lng = lngEl.value;
+        const radius = radiusEl.value || 5000;
+        resultsEl.innerHTML = "<p>Loading...</p>";
+        try {
+          const res = await fetch(`http://localhost:8000/api/places/near?lat=${lat}&lng=${lng}&radius=${radius}`);
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || "Request failed");
+          renderResults(data.places || []);
+        } catch (err) {
+          resultsEl.innerHTML = `<p style="color:#dc2626;">${err.message}</p>`;
+        }
+      });
+
+      document.getElementById("use-location-btn").addEventListener("click", () => {
+        if (!navigator.geolocation) {
+          alert("Geolocation is not supported.");
+          return;
+        }
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            latEl.value = pos.coords.latitude.toFixed(6);
+            lngEl.value = pos.coords.longitude.toFixed(6);
+          },
+          () => alert("Could not get your location.")
+        );
+      });
+
+      function renderResults(places) {
+        if (!places.length) {
+          resultsEl.innerHTML = "<p>No parking places found in this area.</p>";
+          return;
+        }
+        resultsEl.innerHTML = places.map((p) => {
+          const addr = p.place_name
+            ? [p.place_name.address, p.place_name.city].filter(Boolean).join(", ")
+            : "—";
+          const price = p.pricing ? `₹${p.pricing.normal_price}/hr` : "";
+          const features = (p.features || []).map((f) => `<span class="place-tag">${f}</span>`).join("");
+          const dist = p.distance_meters != null ? `${p.distance_meters} m away` : "";
+          const placeId = (p._id || p.id || "").toString();
+          const href = placeId
+            ? `booking.html?place_id=${encodeURIComponent(placeId)}`
+            : "booking.html";
+          return `
+            <div class="place-card">
+              <h4>${addr || "Parking place"}</h4>
+              <p class="place-address">${p.place_name?.city || ""} ${p.place_name?.pincode || ""}</p>
+              ${features ? `<div class="place-features">${features}</div>` : ""}
+              <p class="place-price">${price}</p>
+              ${dist ? `<p class="place-distance">${dist}</p>` : ""}
+              <div class="place-actions">
+                <a
+                  href="${href}"
+                  class="primary-button book-slot-link"
+                  data-place-id="${placeId}"
+                  onclick="if(this.dataset.placeId){localStorage.setItem('selectedPlaceId', this.dataset.placeId);}"
+                  style="padding:6px 12px;font-size:12px;display:inline-block;"
+                >Book slot</a>
+              </div>
+            </div>
+          `;
+        }).join("");
+      }
+
+      resultsEl.addEventListener("click", (e) => {
+        const link = e.target && e.target.closest ? e.target.closest(".book-slot-link") : null;
+        if (!link) return;
+        e.preventDefault();
+        const placeId = (link.dataset.placeId || "").toString().trim();
+        if (placeId) {
+          localStorage.setItem("selectedPlaceId", placeId);
+          window.location.href = `booking.html?place_id=${encodeURIComponent(placeId)}`;
+        }
+      });
+    </script>
+  </body>
+</html>

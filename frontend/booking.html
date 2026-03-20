@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Book a Slot - Smart Parking</title>
+    <link rel="stylesheet" href="styles.css" />
+    <style>
+      .booking-body { min-height: 100vh; background: radial-gradient(circle at top left, #dbeafe, #f0fdf4); padding: 16px; }
+      .booking-shell { max-width: 560px; margin: 0 auto; }
+      .booking-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+      .booking-title { margin: 0; }
+      .booking-card { background: white; border-radius: 14px; padding: 20px; box-shadow: 0 16px 40px rgba(15,23,42,0.12); border: 1px solid #e2e8f0; }
+      .booking-field { margin-bottom: 14px; }
+      .booking-field label { display: block; font-size: 12px; font-weight: 500; margin-bottom: 4px; }
+      .booking-field input, .booking-field select { width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid #cbd5e1; box-sizing: border-box; }
+    </style>
+  </head>
+  <body class="booking-body">
+    <div class="booking-shell">
+      <div class="booking-header">
+        <h1 class="booking-title">Book a slot</h1>
+        <a href="nearby.html" class="link-button">Back to nearby</a>
+      </div>
+
+      <div id="place-info" class="booking-card" style="margin-bottom:16px;"></div>
+
+      <form id="booking-form" class="booking-card">
+        <div class="booking-field">
+          <label for="slot_id">Select slot</label>
+          <select id="slot_id" required></select>
+        </div>
+        <div class="booking-field">
+          <label for="start_time">Start time</label>
+          <input id="start_time" type="datetime-local" required />
+        </div>
+        <div class="booking-field">
+          <label for="end_time">End time</label>
+          <input id="end_time" type="datetime-local" required />
+        </div>
+        <div class="booking-field">
+          <label for="vehicle_number">Vehicle number (optional)</label>
+          <input id="vehicle_number" type="text" placeholder="e.g. AP09AB1234" />
+        </div>
+        <button type="submit" class="primary-button full-width">Confirm booking</button>
+      </form>
+    </div>
+    <script>
+      const API = "http://localhost:8000/api";
+      const params = new URLSearchParams(location.search);
+      const placeIdFromUrl = (params.get("place_id") || "").trim();
+      const placeIdFromStorage = (localStorage.getItem("selectedPlaceId") || "").trim();
+      const placeId = placeIdFromUrl || placeIdFromStorage;
+
+      if (!placeId || placeId === "undefined" || placeId === "null") {
+        document.getElementById("place-info").innerHTML = `<p>
+          No place selected.
+          <br />
+          Received <code>place_id</code>: <code>${placeIdFromUrl || ""}</code>
+          <br />
+          From storage: <code>${placeIdFromStorage || ""}</code>
+          <br />
+          Query: <code>${location.search}</code>
+          <br />
+          <a href="nearby.html">Search nearby</a>
+        </p>`;
+        document.getElementById("booking-form").style.display = "none";
+      } else {
+        loadPlace();
+        setDefaultTimes();
+      }
+
+      function setDefaultTimes() {
+        const now = new Date();
+        const end = new Date(now.getTime() + 60 * 60 * 1000);
+        document.getElementById("start_time").value = now.toISOString().slice(0, 16);
+        document.getElementById("end_time").value = end.toISOString().slice(0, 16);
+      }
+
+      async function loadPlace() {
+        try {
+          const res = await fetch(`${API}/places/${placeId}`);
+          const place = await res.json();
+          if (!res.ok) throw new Error(place.error || "Failed to load place");
+
+          const addr = place.place_name ? [place.place_name.address, place.place_name.city].filter(Boolean).join(", ") : "—";
+          document.getElementById("place-info").innerHTML = `
+            <h3 style="margin:0 0 6px;">${addr}</h3>
+            <p style="margin:0;font-size:13px;color:#64748b;">₹${place.pricing?.normal_price || 0}/hr · ${(place.features || []).join(", ")}</p>
+          `;
+
+          const vacant = (place.slots || []).filter((s) => s.status === 0);
+          const sel = document.getElementById("slot_id");
+          sel.innerHTML = vacant.length
+            ? vacant.map((s) => `<option value="${s.slot_id}">${s.slot_number} (${s.slot_type}) - ₹${s.price || place.pricing?.normal_price}/hr</option>`).join("")
+            : "<option value=''>No vacant slots</option>";
+        } catch (err) {
+          document.getElementById("place-info").innerHTML = `<p style="color:#dc2626;">${err.message}</p>`;
+        }
+      }
+
+      document.getElementById("booking-form").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const slotId = document.getElementById("slot_id").value;
+        const start = document.getElementById("start_time").value;
+        const end = document.getElementById("end_time").value;
+
+        if (!slotId || !start || !end) {
+          alert("Please fill all required fields.");
+          return;
+        }
+
+        try {
+          const res = await fetch(`${API}/bookings`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              place_id: placeId,
+              slot_id: slotId,
+              start_time: new Date(start).toISOString(),
+              end_time: new Date(end).toISOString(),
+            }),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || "Booking failed");
+
+          alert(`Booking confirmed! Total: ₹${data.total_amount}`);
+          location.href = "my-bookings.html";
+        } catch (err) {
+          alert(err.message || "Booking failed. Please try again.");
+        }
+      });
+    </script>
+  </body>
+</html>

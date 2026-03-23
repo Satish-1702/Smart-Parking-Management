@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Settings - Smart Parking</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body class="auth-body">
+    <header class="auth-header">
+      <h1>Smart Parking Digital Twin</h1>
+      <a href="dashboard.html" class="link-button">Back to dashboard</a>
+    </header>
+    <main class="auth-container">
+      <section class="auth-card">
+        <h2>Settings</h2>
+        <p class="auth-subtitle">Demo settings for this prototype.</p>
+        <div class="slot-controls">
+          <div class="slot-controls-row">
+            <label for="default-lot">Default parking lot</label>
+            <select id="default-lot">
+              <option value="central-lot" selected>Central Lot</option>
+            </select>
+          </div>
+          <div class="slot-controls-row">
+            <label for="color-theme">Color theme</label>
+            <select id="color-theme">
+              <option value="ocean" selected>Ocean</option>
+              <option value="midnight">Midnight</option>
+            </select>
+          </div>
+          <button
+            type="button"
+            class="primary-button full-width"
+            onclick="alert('Settings saved (demo).')"
+          >
+            Save settings
+          </button>
+          <p class="slot-controls-hint">
+            In a real app, these preferences would be stored per user.
+          </p>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>
+

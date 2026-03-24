@@ -63,6 +63,24 @@ npm run start
    - `GET /api/places`
    - WebSocket at `/ws/stream`
 
+## Deploy on Render (Free)
+This repo includes a Render Blueprint at `render.yaml` for a single free web service.
+
+1. Create a MongoDB Atlas free cluster (M0) and copy the connection string.
+2. Push this repo to GitHub.
+3. In Render, choose **New + > Blueprint** and select your repo.
+4. During setup, provide `MONGODB_URI` (prompted because `sync: false`).
+5. Deploy.
+
+Render service settings from `render.yaml`:
+- `plan: free`
+- `buildCommand: cd server && npm ci --omit=dev`
+- `startCommand: cd server && npm run start`
+- `healthCheckPath: /health`
+
+Free plan note:
+- Free web services can spin down after inactivity, so first request can be slower and live sockets can reconnect. The app now includes WebSocket heartbeat + reconnect logic for this.
+
 ## Docker (Optional)
 Build from repository root:
 ```bash

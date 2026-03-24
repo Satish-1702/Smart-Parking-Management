@@ -107,11 +107,28 @@ const clients = new Set();
 
 wss.on("connection", async (ws) => {
   await ready;
+  ws.isAlive = true;
   clients.add(ws);
   ws.send(JSON.stringify({ type: "init", data: grid.snapshot() }));
+  ws.on("pong", () => {
+    ws.isAlive = true;
+  });
   ws.on("message", () => {});
   ws.on("close", () => clients.delete(ws));
 });
+
+// Keep socket state fresh and clean up stale connections.
+const wsHeartbeat = setInterval(() => {
+  clients.forEach((ws) => {
+    if (ws.isAlive === false) {
+      clients.delete(ws);
+      ws.terminate();
+      return;
+    }
+    ws.isAlive = false;
+    ws.ping();
+  });
+}, 30000);
 
 function broadcast(message) {
   const data = JSON.stringify(message);
@@ -131,5 +148,9 @@ server.listen(PORT, HOST, () => {
 server.on("error", (err) => {
   console.error("Server failed to start:", err);
   process.exit(1);
+});
+
+server.on("close", () => {
+  clearInterval(wsHeartbeat);
 });
 

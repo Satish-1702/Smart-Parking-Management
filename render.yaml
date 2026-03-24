@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: smart-parking
+    runtime: node
+    plan: free
+    autoDeployTrigger: commit
+    buildCommand: cd server && npm ci --omit=dev
+    startCommand: cd server && npm run start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: HOST
+        value: 0.0.0.0
+      - key: TRUST_PROXY
+        value: "true"
+      - key: MONGODB_TIMEOUT_MS
+        value: "10000"
+      - key: MONGODB_URI
+        sync: false

@@ -251,25 +251,55 @@ function setupActions() {
   }
 }
 
+let wsReconnectAttempts = 0;
+let wsReconnectTimer = null;
+let wsRef = null;
+
 function setupWebsocket() {
-  const ws = new WebSocket(`${WS_BASE}/ws/stream`);
-  ws.onmessage = (event) => {
-    const msg = JSON.parse(event.data);
-    if (msg.type === "init") {
-      slots = msg.data.slots;
-      updateSummary();
-      renderGrid();
-    }
-    if (msg.type === "slot.updated") {
-      const idx = slots.findIndex((s) => s.id === msg.slot.id);
-      if (idx >= 0) {
-        slots[idx] = msg.slot;
+  const connect = () => {
+    const ws = new WebSocket(`${WS_BASE}/ws/stream`);
+    wsRef = ws;
+
+    ws.onopen = () => {
+      wsReconnectAttempts = 0;
+    };
+
+    ws.onmessage = (event) => {
+      const msg = JSON.parse(event.data);
+      if (msg.type === "init") {
+        slots = msg.data.slots;
         updateSummary();
         renderGrid();
-        showSlot(msg.slot.id);
       }
-    }
+      if (msg.type === "slot.updated") {
+        const idx = slots.findIndex((s) => s.id === msg.slot.id);
+        if (idx >= 0) {
+          slots[idx] = msg.slot;
+          updateSummary();
+          renderGrid();
+          showSlot(msg.slot.id);
+        }
+      }
+    };
+
+    ws.onclose = () => {
+      if (ws !== wsRef) return;
+      const delayMs = Math.min(30000, 1000 * 2 ** wsReconnectAttempts);
+      wsReconnectAttempts = Math.min(wsReconnectAttempts + 1, 6);
+      wsReconnectTimer = setTimeout(connect, delayMs);
+    };
   };
+
+  connect();
+
+  window.addEventListener("beforeunload", () => {
+    if (wsReconnectTimer) {
+      clearTimeout(wsReconnectTimer);
+    }
+    if (wsRef && wsRef.readyState === WebSocket.OPEN) {
+      wsRef.close();
+    }
+  });
 }
 
 if (gridEl && slotInfoEl && priceInfoEl) {

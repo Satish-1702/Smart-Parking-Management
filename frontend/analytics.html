@@ -3,27 +3,16 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Emergency Scenario Overview - Smart Parking</title>
+    <title>Analytics Overview - Smart Parking</title>
     <link rel="stylesheet" href="styles.css" />
-    <style>
-      .scenario-accent {
-        color: #0f766e;
-      }
-      .analytics-body {
-        min-height: 100vh;
-        background: radial-gradient(circle at top left, #ccfbf1, #f9fafb);
-        padding: 16px;
-        font-family: "Segoe UI", Arial, sans-serif;
-      }
-    </style>
   </head>
   <body class="analytics-body">
     <div class="analytics-shell">
       <div class="analytics-header">
         <div>
-          <h1 class="analytics-title scenario-accent">Emergency scenario</h1>
+          <h1 class="analytics-title">Parking analytics</h1>
           <p class="analytics-subtitle" id="analytics-subtitle">
-            Emergency mode applied, prioritising critical routes.
+            Live occupancy distribution and slot layout.
           </p>
         </div>
         <a href="dashboard.html" class="link-button">Back to dashboard</a>
@@ -33,7 +22,7 @@
         <section class="chart-card">
           <h2 class="chart-title">Occupancy by status</h2>
           <p class="chart-subtitle">
-            Vacant, occupied and unavailable slots after running Emergency mode.
+            Vacant, occupied and unavailable slot counts.
           </p>
           <div id="bars"></div>
         </section>
@@ -41,7 +30,7 @@
         <section class="chart-card">
           <h2 class="chart-title">Occupancy distribution</h2>
           <p class="chart-subtitle">
-            Proportion of each status when emergency restrictions are active.
+            Proportion of each slot status for the selected view.
           </p>
           <div style="display: flex; gap: 12px; align-items: center">
             <div class="pie-circle">
@@ -74,7 +63,7 @@
         <section class="chart-card">
           <h2 class="chart-title">Parking layout preview</h2>
           <p class="chart-subtitle">
-            Compact layout showing how emergency rules affect slots.
+            Compact layout view; click a slot to cycle status.
           </p>
           <div id="layout-grid" class="layout-grid"></div>
         </section>
@@ -84,4 +73,3 @@
     <script src="scenario-view.js"></script>
   </body>
 </html>
-

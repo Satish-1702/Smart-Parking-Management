@@ -79,9 +79,11 @@
         </form>
       </section>
     </main>
+    <script src="runtime-config.js"></script>
     <script>
       document.querySelector(".auth-form").addEventListener("submit", async function (e) {
         e.preventDefault();
+        const API = window.__SPARK_CONFIG__?.API_V1 || "http://localhost:8000/api";
         const fullName = document.getElementById("name").value.trim();
         const email = document.getElementById("email").value.trim();
         const vehicle = document.getElementById("vehicle").value.trim();
@@ -99,7 +101,7 @@
         }
 
         try {
-          const resp = await fetch("http://localhost:8000/api/users/signup", {
+          const resp = await fetch(`${API}/users/signup`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ full_name: fullName, email, password, phone: "", vehicle }),

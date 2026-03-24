@@ -119,7 +119,9 @@
 
       <div id="results"></div>
     </div>
+    <script src="runtime-config.js"></script>
     <script>
+      const API = window.__SPARK_CONFIG__?.API_V1 || "http://localhost:8000/api";
       const form = document.getElementById("nearby-form");
       const resultsEl = document.getElementById("results");
       const latEl = document.getElementById("lat");
@@ -133,7 +135,7 @@
         const radius = radiusEl.value || 5000;
         resultsEl.innerHTML = "<p>Loading...</p>";
         try {
-          const res = await fetch(`http://localhost:8000/api/places/near?lat=${lat}&lng=${lng}&radius=${radius}`);
+          const res = await fetch(`${API}/places/near?lat=${lat}&lng=${lng}&radius=${radius}`);
           const data = await res.json();
           if (!res.ok) throw new Error(data.error || "Request failed");
           renderResults(data.places || []);

@@ -1,60 +1,76 @@
-# Digital Twin Smart Parking (prototype)
+# Smart Parking Management
 
-Two backends are included so you can pick your stack:
-- **Node.js / Express + WebSocket** (`server/`)
-- **FastAPI + WebSocket** (`backend/`)
+Node.js + Express + MongoDB smart parking prototype with:
+- Multi-page static frontend in `frontend/`
+- REST API + WebSocket backend in `server/`
+- Parking place search, booking flow, dashboard, scenario views, and live slot updates
 
-Static frontend (`frontend/`) is plain HTML/CSS/JS and talks to `http://localhost:8000`.
+## Project Structure
+- `frontend/` UI pages and browser scripts
+- `server/src/index.js` API + WebSocket entrypoint
+- `server/src/routes/` REST routes (`users`, `places`, `bookings`)
+- `server/src/models/` Mongoose models
+- `server/src/state.js` in-memory lot state synced with `SlotModel`
+- `server/src/scenarios.js` rush/festival/emergency state mutation logic
+- `server/src/pricing.js` dynamic pricing calculation
+- `server/src/seed.js` seed script for demo admin/user/places/slots
 
-## Quick start
-### Option A: Node.js / Express
+## Local Development
+1. Configure env:
+```bash
+cd server
+copy .env.example .env
+```
+2. Start MongoDB locally (or set Atlas URI in `server/.env`).
+3. Install and run backend:
 ```bash
 cd server
 npm install
-npm run start   # expects MongoDB running (local or Atlas). Set MONGODB_URI if needed.
-npm run dev     # optional: live reload
+npm run start
 ```
+4. Open UI:
+- Option A (recommended): `http://localhost:8000/login.html` (served by Express)
+- Option B: serve `frontend/` separately; runtime config auto-targets `localhost:8000` in local dev
 
-### Option B: FastAPI
+## Runtime Configuration
+Backend reads env from `server/.env`:
+- `MONGODB_URI` (required)
+- `PORT` (default `8000`)
+- `HOST` (default `0.0.0.0`)
+- `CORS_ORIGINS` comma-separated allowlist (optional; if empty, CORS reflects request origin)
+- `TRUST_PROXY` (`true`/`false`)
+- `MONGODB_TIMEOUT_MS` (default `10000`)
+
+Frontend runtime config (`frontend/runtime-config.js`):
+- Defaults to same-origin in deployed environments
+- Uses `http://localhost:8000` automatically when frontend is served from another local port
+- Optional override from browser:
+  - `localStorage.setItem("SP_API_ORIGIN", "https://your-api-domain")`
+
+## Deployment Checklist
+1. Provision MongoDB (Atlas or managed instance).
+2. Set backend env vars in your hosting platform.
+3. Run backend with:
 ```bash
-cd backend
-python -m venv .venv
-. .venv/Scripts/activate  # Windows PowerShell: .\\.venv\\Scripts\\Activate.ps1
-pip install -r requirements.txt
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+cd server
+npm ci --omit=dev
+npm run start
 ```
+4. Serve frontend from the same domain (already handled by Express static middleware).
+5. Set `CORS_ORIGINS` if frontend and backend are hosted on different domains.
+6. Verify:
+   - `GET /health`
+   - `GET /api/places`
+   - WebSocket at `/ws/stream`
 
-### Frontend
-Serve the static files:
+## Docker (Optional)
+Build from repository root:
 ```bash
-cd frontend
-python -m http.server 4173
+docker build -f server/Dockerfile -t smart-parking:latest .
+docker run --rm -p 8000:8000 --env-file server/.env smart-parking:latest
 ```
-Open http://localhost:4173 in your browser. The page expects the backend at http://localhost:8000.
 
-### React Frontend (interactive controls)
-A no-build React bundle is under `frontend-react/` (uses React via CDN).
-```bash
-cd frontend-react
-python -m http.server 4174
-```
-Open http://localhost:4174 (talks to http://localhost:8000).
-
-### MongoDB / Firebase notes
-- Node backend persists slots to MongoDB via `MONGODB_URI` (default: `mongodb://localhost:27017/smart-parking`). Use MongoDB Atlas for cloud or point to a local daemon.
-- Firebase alternative: replace `server/src/db.js` + `server/src/models/slot.js` with Firestore calls, then call `grid.loadFromModel` / `grid.persistSlot` analogs to hydrate and sync state.
-
-## What’s included
-- Endpoints for slots, scenarios, pricing, and a websocket stream (Node and Python versions).
-- In-memory grid seeded with sample slots (`server/src/state.js`, `backend/app/state.py`).
-- Simple dynamic pricing (`server/src/pricing.js`, `backend/app/pricing.py`).
-- Scenario runner for rush/festival/emergency (`server/src/scenarios.js`, `backend/app/scenarios.py`).
-- Static UI showing the grid, slot details, and prices (`frontend/`).
-- React UI with live websocket updates and slot controls (`frontend-react/`).
-
-## Notes
-- State is in-memory only; restart resets data. Swap the grid store with MongoDB or Firebase by persisting slot objects and pushing updates through the websocket.
-- CORS is open for local development.
-- Extend pricing/scenario logic or plug in auth as needed.
-
-"# Smart-Parking-Management" 
+## Security Notes
+- Do not commit real secrets in `.env`.
+- Rotate any previously exposed credentials.
+- Keep `server/.env.example` as the template for shared setup.

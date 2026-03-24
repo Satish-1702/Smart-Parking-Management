@@ -1,4 +1,6 @@
-const API_BASE = "http://localhost:8000";
+const runtimeConfig = window.__SPARK_CONFIG__ || {};
+const API_BASE = runtimeConfig.API_BASE || "http://localhost:8000";
+const WS_BASE = runtimeConfig.WS_BASE || "ws://localhost:8000";
 const LOT_ID = "central-lot";
 
 const gridEl = document.getElementById("grid");
@@ -83,6 +85,9 @@ function showSlot(slotId) {
 
 async function fetchGrid() {
   const res = await fetch(`${API_BASE}/lots/${LOT_ID}/slots`);
+  if (!res.ok) {
+    throw new Error(`Failed to load lot data (${res.status})`);
+  }
   const data = await res.json();
   slots = data.slots || [];
   updateSummary();
@@ -168,7 +173,7 @@ function setupFeatureLinks() {
     card.style.cursor = "pointer";
     card.onclick = () => {
       const feature = card.dataset.feature || "total";
-      openAnalyticsFromDashboard(feature);
+      window.location.href = openAnalyticsFromDashboard(feature);
     };
   });
 }
@@ -247,7 +252,7 @@ function setupActions() {
 }
 
 function setupWebsocket() {
-  const ws = new WebSocket(`ws://localhost:8000/ws/stream`);
+  const ws = new WebSocket(`${WS_BASE}/ws/stream`);
   ws.onmessage = (event) => {
     const msg = JSON.parse(event.data);
     if (msg.type === "init") {
@@ -270,7 +275,11 @@ function setupWebsocket() {
 if (gridEl && slotInfoEl && priceInfoEl) {
   setupActions();
   setupFeatureLinks();
-  fetchGrid();
+  fetchGrid().catch((err) => {
+    console.error(err);
+    if (slotInfoEl) slotInfoEl.textContent = "Failed to load slot data.";
+    if (priceInfoEl) priceInfoEl.textContent = "Failed to load insights.";
+  });
   setupWebsocket();
 }
 

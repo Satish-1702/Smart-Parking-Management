@@ -45,8 +45,9 @@
         <button type="submit" class="primary-button full-width">Confirm booking</button>
       </form>
     </div>
+    <script src="runtime-config.js"></script>
     <script>
-      const API = "http://localhost:8000/api";
+      const API = window.__SPARK_CONFIG__?.API_V1 || "http://localhost:8000/api";
       const params = new URLSearchParams(location.search);
       const placeIdFromUrl = (params.get("place_id") || "").trim();
       const placeIdFromStorage = (localStorage.getItem("selectedPlaceId") || "").trim();

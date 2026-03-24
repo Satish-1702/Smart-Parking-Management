@@ -56,9 +56,11 @@
         </form>
       </section>
     </main>
+    <script src="runtime-config.js"></script>
     <script>
       document.getElementById("login-form").addEventListener("submit", async function (e) {
         e.preventDefault();
+        const API = window.__SPARK_CONFIG__?.API_V1 || "http://localhost:8000/api";
         const email = document.getElementById("login-email").value.trim();
         const password = document.getElementById("login-password").value.trim();
 
@@ -68,7 +70,7 @@
         }
 
         try {
-          const resp = await fetch("http://localhost:8000/api/users/login", {
+          const resp = await fetch(`${API}/users/login`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ email, password }),

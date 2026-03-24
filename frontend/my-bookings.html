@@ -26,12 +26,14 @@
       </div>
       <div id="list"></div>
     </div>
+    <script src="runtime-config.js"></script>
     <script>
+      const API = window.__SPARK_CONFIG__?.API_V1 || "http://localhost:8000/api";
       async function load() {
         const list = document.getElementById("list");
         list.innerHTML = "<p>Loading...</p>";
         try {
-          const res = await fetch("http://localhost:8000/api/bookings");
+          const res = await fetch(`${API}/bookings`);
           const data = await res.json();
           const bookings = data.bookings || [];
 

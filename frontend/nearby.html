@@ -97,11 +97,11 @@
           <div class="search-row">
             <div class="search-field">
               <label for="lat">Latitude</label>
-              <input id="lat" type="number" step="any" placeholder="e.g. 17.385" required />
+              <input id="lat" type="number" step="any" placeholder="e.g. 17.385" />
             </div>
             <div class="search-field">
               <label for="lng">Longitude</label>
-              <input id="lng" type="number" step="any" placeholder="e.g. 78.4867" required />
+              <input id="lng" type="number" step="any" placeholder="e.g. 78.4867" />
             </div>
             <div class="search-field">
               <label for="radius">Radius (m)</label>
@@ -119,6 +119,7 @@
 
       <div id="results"></div>
     </div>
+
     <script src="runtime-config.js"></script>
     <script>
       const API = window.__SPARK_CONFIG__?.API_V1 || "http://localhost:8000/api";
@@ -127,84 +128,148 @@
       const latEl = document.getElementById("lat");
       const lngEl = document.getElementById("lng");
       const radiusEl = document.getElementById("radius");
+      const useLocationBtn = document.getElementById("use-location-btn");
 
       form.addEventListener("submit", async (e) => {
         e.preventDefault();
-        const lat = latEl.value;
-        const lng = lngEl.value;
-        const radius = radiusEl.value || 5000;
-        resultsEl.innerHTML = "<p>Loading...</p>";
-        try {
-          const res = await fetch(`${API}/places/near?lat=${lat}&lng=${lng}&radius=${radius}`);
-          const data = await res.json();
-          if (!res.ok) throw new Error(data.error || "Request failed");
-          renderResults(data.places || []);
-        } catch (err) {
-          resultsEl.innerHTML = `<p style="color:#dc2626;">${err.message}</p>`;
-        }
+        await searchNearby();
       });
 
-      document.getElementById("use-location-btn").addEventListener("click", () => {
+      useLocationBtn.addEventListener("click", () => {
         if (!navigator.geolocation) {
           alert("Geolocation is not supported.");
           return;
         }
         navigator.geolocation.getCurrentPosition(
-          (pos) => {
+          async (pos) => {
             latEl.value = pos.coords.latitude.toFixed(6);
             lngEl.value = pos.coords.longitude.toFixed(6);
+            await searchNearby();
           },
-          () => alert("Could not get your location.")
+          () => alert("Could not get your location."),
         );
       });
 
-      function renderResults(places) {
-        if (!places.length) {
-          resultsEl.innerHTML = "<p>No parking places found in this area.</p>";
+      async function fetchJson(url, fallbackError = "Request failed") {
+        const res = await fetch(url);
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || fallbackError);
+        }
+        return data;
+      }
+
+      async function loadAllPlaces(message = "") {
+        resultsEl.innerHTML = "<p>Loading places...</p>";
+        try {
+          const data = await fetchJson(`${API}/places`, "Failed to load places");
+          renderResults(data.places || [], message);
+        } catch (err) {
+          resultsEl.innerHTML = `<p style="color:#dc2626;">${err.message}</p>`;
+        }
+      }
+
+      async function searchNearby() {
+        const lat = Number(latEl.value);
+        const lng = Number(lngEl.value);
+        const radius = Number(radiusEl.value) || 5000;
+
+        if (Number.isNaN(lat) || Number.isNaN(lng)) {
+          await loadAllPlaces("Enter latitude/longitude and search to filter nearby.");
           return;
         }
-        resultsEl.innerHTML = places.map((p) => {
-          const addr = p.place_name
-            ? [p.place_name.address, p.place_name.city].filter(Boolean).join(", ")
-            : "—";
-          const price = p.pricing ? `₹${p.pricing.normal_price}/hr` : "";
-          const features = (p.features || []).map((f) => `<span class="place-tag">${f}</span>`).join("");
-          const dist = p.distance_meters != null ? `${p.distance_meters} m away` : "";
-          const placeId = (p._id || p.id || "").toString();
-          const href = placeId
-            ? `booking.html?place_id=${encodeURIComponent(placeId)}`
-            : "booking.html";
-          return `
-            <div class="place-card">
-              <h4>${addr || "Parking place"}</h4>
-              <p class="place-address">${p.place_name?.city || ""} ${p.place_name?.pincode || ""}</p>
-              ${features ? `<div class="place-features">${features}</div>` : ""}
-              <p class="place-price">${price}</p>
-              ${dist ? `<p class="place-distance">${dist}</p>` : ""}
-              <div class="place-actions">
-                <a
-                  href="${href}"
-                  class="primary-button book-slot-link"
-                  data-place-id="${placeId}"
-                  onclick="if(this.dataset.placeId){localStorage.setItem('selectedPlaceId', this.dataset.placeId);}"
-                  style="padding:6px 12px;font-size:12px;display:inline-block;"
-                >Book slot</a>
-              </div>
-            </div>
-          `;
-        }).join("");
+
+        resultsEl.innerHTML = "<p>Loading nearby places...</p>";
+
+        try {
+          const params = new URLSearchParams({
+            lat: String(lat),
+            lng: String(lng),
+            radius: String(radius),
+          });
+
+          const data = await fetchJson(
+            `${API}/places/near?${params.toString()}`,
+            "Failed to load nearby places",
+          );
+
+          const nearbyPlaces = data.places || [];
+          if (!nearbyPlaces.length) {
+            await loadAllPlaces("No places were found in this radius. Showing all places instead.");
+            return;
+          }
+
+          renderResults(nearbyPlaces);
+        } catch (err) {
+          resultsEl.innerHTML = `<p style="color:#dc2626;">${err.message}</p>`;
+        }
+      }
+
+      function renderResults(places, infoMessage = "") {
+        if (!places.length) {
+          resultsEl.innerHTML = "<p>No parking places found.</p>";
+          return;
+        }
+
+        const messageHtml = infoMessage
+          ? `<p style="font-size:12px;color:#0369a1;margin:0 0 10px;">${infoMessage}</p>`
+          : "";
+
+        resultsEl.innerHTML =
+          messageHtml +
+          places
+            .map((p) => {
+              const addr = p.place_name
+                ? [p.place_name.address, p.place_name.city].filter(Boolean).join(", ")
+                : "-";
+              const price = p.pricing ? `Rs ${p.pricing.normal_price}/hr` : "";
+              const features = (p.features || [])
+                .map((f) => `<span class="place-tag">${f}</span>`)
+                .join("");
+              const dist = p.distance_meters != null ? `${p.distance_meters} m away` : "";
+              const placeId = String(p.id || p._id || "").trim();
+              const href = placeId
+                ? `booking.html?place_id=${encodeURIComponent(placeId)}`
+                : "booking.html";
+
+              return `
+                <div class="place-card">
+                  <h4>${addr || "Parking place"}</h4>
+                  <p class="place-address">${p.place_name?.city || ""} ${p.place_name?.pincode || ""}</p>
+                  ${features ? `<div class="place-features">${features}</div>` : ""}
+                  <p class="place-price">${price}</p>
+                  ${dist ? `<p class="place-distance">${dist}</p>` : ""}
+                  <div class="place-actions">
+                    <a
+                      href="${href}"
+                      class="primary-button book-slot-link"
+                      data-place-id="${placeId}"
+                      style="padding:6px 12px;font-size:12px;display:inline-block;"
+                    >Book slot</a>
+                  </div>
+                </div>
+              `;
+            })
+            .join("");
       }
 
       resultsEl.addEventListener("click", (e) => {
         const link = e.target && e.target.closest ? e.target.closest(".book-slot-link") : null;
         if (!link) return;
         e.preventDefault();
+
         const placeId = (link.dataset.placeId || "").toString().trim();
-        if (placeId) {
-          localStorage.setItem("selectedPlaceId", placeId);
-          window.location.href = `booking.html?place_id=${encodeURIComponent(placeId)}`;
+        if (!placeId) {
+          window.location.href = "booking.html";
+          return;
         }
+
+        localStorage.setItem("selectedPlaceId", placeId);
+        window.location.href = `booking.html?place_id=${encodeURIComponent(placeId)}`;
       });
+
+      loadAllPlaces();
     </script>
   </body>
 </html>
+

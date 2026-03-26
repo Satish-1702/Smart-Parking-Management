@@ -35,28 +35,48 @@ router.get("/places/near", async (req, res) => {
       return res.status(400).json({ error: "lat and lng are required (numbers)" });
     }
 
-    const places = await ParkingPlaceModel.find({
-      location: {
-        $nearSphere: {
-          $geometry: {
-            type: "Point",
-            coordinates: [lng, lat],
+    let places;
+    try {
+      places = await ParkingPlaceModel.find({
+        location: {
+          $nearSphere: {
+            $geometry: {
+              type: "Point",
+              coordinates: [lng, lat],
+            },
+            $maxDistance: radiusMeters,
           },
-          $maxDistance: radiusMeters,
         },
-      },
-    })
-      .limit(20)
-      .lean();
+      })
+        .limit(20)
+        .lean();
+    } catch {
+      // Fallback for deployments where geo index is missing or still building.
+      const allWithCoords = await ParkingPlaceModel.find({
+        "location.coordinates.0": { $exists: true },
+        "location.coordinates.1": { $exists: true },
+      }).lean();
+
+      places = allWithCoords
+        .map((p) => {
+          const coords = p.location?.coordinates || [];
+          const distanceMeters = haversineMeters(lat, lng, coords[1], coords[0]);
+          return { ...p, _distanceMetersRaw: distanceMeters };
+        })
+        .filter((p) => p._distanceMetersRaw <= radiusMeters)
+        .sort((a, b) => a._distanceMetersRaw - b._distanceMetersRaw)
+        .slice(0, 20);
+    }
 
     const withDistance = places.map((p) => {
-      const coords = p.location?.coordinates;
+      const { _distanceMetersRaw, ...place } = p;
+      const coords = place.location?.coordinates;
       let distance = null;
       if (coords && coords.length >= 2) {
         distance = Math.round(haversineMeters(lat, lng, coords[1], coords[0]));
       }
-      const id = (p._id && p._id.toString) ? p._id.toString() : String(p._id || "");
-      return { ...p, _id: id, id: id, distance_meters: distance };
+      const id = (place._id && place._id.toString) ? place._id.toString() : String(place._id || "");
+      return { ...place, _id: id, id: id, distance_meters: distance };
     });
 
     res.json({ places: withDistance });
